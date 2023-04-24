@@ -1,0 +1,75 @@
+
+タスク
+  三角錐の描画
+    draw_indexed
+    fragment color
+    zwrite, ztest
+      https://vulkan-tutorial.com/Depth_buffering
+    view変換
+  tesselation
+    定数tes_ctrl + 平面tes_eval
+    tes_eval
+    tes_ctrl(edge length based)
+  Maxima
+    式の整理
+    3点の順序で曲面が変化しないか確認
+
+vertex
+  view変換
+tes_control
+  EdgeLengthBasedTess
+tes_eval
+  PN Triangle
+fragment
+  zwrite
+  normalだけで色を決定
+    normalをそのままrgbにしてええか
+
+
+
+vec3 vertices
+vec3 normals
+edges
+  uint vertexIds[2]
+  uint normalIds[2]
+faces
+  uint edgeId[3]
+
+face_vertices  //can be calculated by edges in the face
+
+
+
+pn_edge_triangle(
+  vertex_0, vertex_1, vertex_2,
+  edge_normal_01_0, edge_normal_01_1,
+  edge_normal_12_1, edge_normal_12_2,
+  edge_normal_20_2, edge_normal_20_0,
+  t0, t1
+)
+pn_edge(
+  vertex_0,
+  vertex_1,
+  normal_0,
+  normal_1,
+  t
+)
+edge_normals_to_face_normals(
+  vertex_0, vertex_1, vertex_2,
+  edge_normal_01_0, ...
+  out face_normal_0, ...
+)
+edge_normals_to_tangents(
+  vertex_0, vertex_1,
+  normal_0, normal_1,
+  out tangent_0, out tangent_1
+)
+edge_tangents_to_face_normal(
+  edge_tangent_0, edge_tangent_1
+) {
+  normalize(cross(tangents))
+}
+
+
+
+
+

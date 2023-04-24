@@ -1,0 +1,12 @@
+[package]
+name = "cone_tessellation"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+vulkano = "0.33"
+vulkano-shaders = "0.33"
+winit = "0.28"
+vulkano-win = "0.33"
+vulkano-util = "0.33"
