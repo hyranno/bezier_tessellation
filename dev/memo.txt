@@ -1,21 +1,17 @@
 
 タスク
-  三角錐の描画
-    draw_indexed
-    fragment color
-    zwrite, ztest
-      https://vulkan-tutorial.com/Depth_buffering
-    view変換
   tesselation
-    定数tes_ctrl + 平面tes_eval
-    tes_eval
+    tes_eval(pn edges)
     tes_ctrl(edge length based)
   Maxima
     式の整理
     3点の順序で曲面が変化しないか確認
 
+
+built-in variables
+  https://www.khronos.org/opengl/wiki/Built-in_Variable_(GLSL)
+
 vertex
-  view変換
 tes_control
   EdgeLengthBasedTess
 tes_eval
@@ -23,7 +19,6 @@ tes_eval
 fragment
   zwrite
   normalだけで色を決定
-    normalをそのままrgbにしてええか
 
 
 
