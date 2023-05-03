@@ -1,12 +1,13 @@
 
 タスク
+  z-test
   tesselation
     tes_eval(pn edges)
+      normal
     tes_ctrl(edge length based)
-  Maxima
-    式の整理
-    3点の順序で曲面が変化しないか確認
+  データ部分を分離
 
+builder.bind_descriptor_sets
 
 built-in variables
   https://www.khronos.org/opengl/wiki/Built-in_Variable_(GLSL)
@@ -30,41 +31,26 @@ edges
 faces
   uint edgeId[3]
 
-face_vertices  //can be calculated by edges in the face
+/* can be calculated by the faces, edges */
+face_vertices  //index buffer
 
 
+t2=0 のとき法線がv2, n12_2, n20_2に依存しない
+t0=1-t2-t1 として
+n = normalize(cross(dp_dt2, dp_dt1))
 
-pn_edge_triangle(
-  vertex_0, vertex_1, vertex_2,
-  edge_normal_01_0, edge_normal_01_1,
-  edge_normal_12_1, edge_normal_12_2,
-  edge_normal_20_2, edge_normal_20_0,
-  t0, t1
-)
-pn_edge(
-  vertex_0,
-  vertex_1,
-  normal_0,
-  normal_1,
-  t
-)
-edge_normals_to_face_normals(
-  vertex_0, vertex_1, vertex_2,
-  edge_normal_01_0, ...
-  out face_normal_0, ...
-)
-edge_normals_to_tangents(
-  vertex_0, vertex_1,
-  normal_0, normal_1,
-  out tangent_0, out tangent_1
-)
-edge_tangents_to_face_normal(
-  edge_tangent_0, edge_tangent_1
-) {
-  normalize(cross(tangents))
-}
+Cubic Bezier Triangle では無理
+  4次(quartic)
+  6次(hexic)になると制御点の描く3角形が3重になる
 
 
-
-
+分配則
+  dot(a, b+c) = dot(a, b) + dot(a, c)
+  cross(a, b+c) = cross(a, b) + cross(a, c)
+ベクトル三重積
+  cross(a, cross(b,c)) = -dot(a,b)*c -dot(c,a)*b
+cross(b-a, c-a)
+  = +cross(b,c) +cross(c,a) +cross(a,b)
+  = cross(c-b, a-b)
+  = cross(a-c, b-c)
 

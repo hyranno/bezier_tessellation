@@ -22,6 +22,7 @@ use vulkano::{
         },
         Pipeline,
         GraphicsPipeline,
+        PipelineBindPoint,
     },
     render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass, Subpass},
     swapchain::{
@@ -29,7 +30,7 @@ use vulkano::{
         SwapchainPresentInfo,
     },
     sync::{self, FlushError, GpuFuture},
-    VulkanLibrary,
+    VulkanLibrary, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet, allocator::StandardDescriptorSetAllocator},
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::{
@@ -173,6 +174,7 @@ fn main() {
     };
 
     let memory_allocator = StandardMemoryAllocator::new_default(device.clone());
+    let descriptor_allocator = StandardDescriptorSetAllocator::new(device.clone());
 
     let push_constants = {
         let a = 0.1f32;
@@ -195,7 +197,7 @@ fn main() {
 
     let vertices = [
         Vertex {
-            position: [0.0, 0.8, 0.0],
+            position: [0.0, 0.5, 0.0],
         },
         Vertex {
             position: [0.5*(0.0f32).sin(), 0.0, 0.5*(0.0f32).cos()],
@@ -207,6 +209,87 @@ fn main() {
             position: [0.5*(std::f32::consts::PI*4.0/3.0).sin(), 0.0, 0.5*(std::f32::consts::PI*4.0/3.0).cos()],
         },
     ];
+
+    #[derive(BufferContents)]
+    #[repr(C)]
+    struct Normal {
+        normal: [f32; 4],  /* include padding */
+    }
+    let normals = [
+        Normal {normal: [
+            (0.0f32).sin(),
+            0.0,
+            (0.0f32).cos(),
+            0.0f32
+        ]},
+        Normal {normal: [
+            (std::f32::consts::PI*2.0/3.0).sin(),
+            0.0,
+            (std::f32::consts::PI*2.0/3.0).cos(),
+            0.0f32
+        ]},
+        Normal {normal: [
+            (std::f32::consts::PI*4.0/3.0).sin(),
+            0.0,
+            (std::f32::consts::PI*4.0/3.0).cos(),
+            0.0f32
+        ]},
+        Normal {normal: [
+            (std::f32::consts::PI/2.0).sin() * (0.0f32).sin(),
+            (std::f32::consts::PI/2.0).cos(),
+            (std::f32::consts::PI/2.0).sin() * (0.0f32).cos(),
+            0.0f32
+        ]},
+        Normal {normal: [
+            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).sin(),
+            (std::f32::consts::PI/2.0).cos(),
+            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).cos(),
+            0.0f32
+        ]},
+        Normal {normal: [
+            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).sin(),
+            (std::f32::consts::PI/2.0).cos(),
+            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).cos(),
+            0.0f32
+        ]},
+    ];
+
+    #[derive(BufferContents)]
+    #[repr(C)]
+    struct Edge {
+        vertices: [u32; 2],
+        normals: [u32; 2],
+    }
+    let edges = [
+        Edge{vertices: [0, 1], normals: [3, 3]},
+        Edge{vertices: [0, 2], normals: [4, 4]},
+        Edge{vertices: [0, 3], normals: [5, 5]},
+        Edge{vertices: [1, 2], normals: [0, 1]},
+        Edge{vertices: [2, 3], normals: [1, 2]},
+        Edge{vertices: [3, 1], normals: [2, 0]},
+    ];
+
+    #[derive(BufferContents)]
+    #[repr(C)]
+    struct Face {
+        edges: [u32; 3],
+    }
+    let faces = [
+        Face{edges: [0, 3, 1]},
+        Face{edges: [1, 4, 2]},
+        Face{edges: [2, 5, 0]},
+        Face{edges: [3, 4, 5]},
+    ];
+
+    /* can be calculated by faces, edges */
+    let vertex_indices = [
+        0,1,2,
+        0,2,3,
+        0,3,1,
+        1,2,3u32
+    ];
+
+
     let vertex_buffer = Buffer::from_iter(
         &memory_allocator,
         BufferCreateInfo {
@@ -218,14 +301,8 @@ fn main() {
             ..Default::default()
         },
         vertices,
-    )
-    .unwrap();
-    let vertex_indices = [
-        0,1,2,
-        0,2,3,
-        0,3,1,
-        1,2,3u32
-    ];
+    ).unwrap();
+
     let index_buffer = Buffer::from_iter(
         &memory_allocator,
         BufferCreateInfo {
@@ -238,6 +315,46 @@ fn main() {
         },
         vertex_indices,
     ).unwrap();
+
+    let ssbo_normals = Buffer::from_iter(
+        &memory_allocator,
+        BufferCreateInfo {
+            usage: BufferUsage::STORAGE_BUFFER,
+            ..Default::default()
+        },
+        AllocationCreateInfo {
+            usage: MemoryUsage::Upload,
+            ..Default::default()
+        },
+        normals,
+    ).unwrap();
+
+    let ssbo_edges = Buffer::from_iter(
+        &memory_allocator,
+        BufferCreateInfo {
+            usage: BufferUsage::STORAGE_BUFFER,
+            ..Default::default()
+        },
+        AllocationCreateInfo {
+            usage: MemoryUsage::Upload,
+            ..Default::default()
+        },
+        edges,
+    ).unwrap();
+
+    let ssbo_faces = Buffer::from_iter(
+        &memory_allocator,
+        BufferCreateInfo {
+            usage: BufferUsage::STORAGE_BUFFER,
+            ..Default::default()
+        },
+        AllocationCreateInfo {
+            usage: MemoryUsage::Upload,
+            ..Default::default()
+        },
+        faces,
+    ).unwrap();
+
 
     let vs = vs::load(device.clone()).unwrap();
     let tcs = tcs::load(device.clone()).unwrap();
@@ -271,7 +388,7 @@ fn main() {
             (),
         )
         .input_assembly_state(InputAssemblyState::new().topology(PrimitiveTopology::PatchList))
-        //.rasterization_state(RasterizationState::new().polygon_mode(PolygonMode::Line))
+        // .rasterization_state(RasterizationState::new().polygon_mode(PolygonMode::Line))
         .tessellation_state(
             TessellationState::new()
                 .patch_control_points(3),
@@ -281,6 +398,17 @@ fn main() {
         .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
         .build(device.clone())
         .unwrap();
+
+    let layout = pipeline.layout().set_layouts();
+    let descriptor_set = PersistentDescriptorSet::new(
+        &descriptor_allocator,
+        layout[0].clone(),
+        [
+            WriteDescriptorSet::buffer(0, ssbo_normals.clone()),
+            WriteDescriptorSet::buffer(1, ssbo_edges.clone()),
+            WriteDescriptorSet::buffer(2, ssbo_faces.clone()),
+        ],
+    ).unwrap();
 
     let mut recreate_swapchain = false;
     let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
@@ -368,6 +496,12 @@ fn main() {
                 .push_constants(pipeline.layout().clone(), 0, push_constants)
                 .bind_vertex_buffers(0, vertex_buffer.clone())
                 .bind_index_buffer(index_buffer.clone())
+                .bind_descriptor_sets(
+                    PipelineBindPoint::Graphics,
+                    pipeline.layout().clone(),
+                    0,
+                    vec![descriptor_set.clone()]
+                )
                 .draw_indexed(index_buffer.len() as u32, 1, 0, 0, 0)
                 .unwrap()
                 .end_render_pass()
