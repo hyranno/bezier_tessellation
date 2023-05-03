@@ -47,7 +47,7 @@ vec3 quartic_bezier_triangle_normal(
     vec3 c211, vec3 c121, vec3 c112,
     float t0, float t1, float t2
 ) {
-    vec3 dp_dt1 = (
+    vec3 dp_dt1 = normalize(
         +(c310-c400) *t0 *t0 *t0
         +(c040-c130) *t1 *t1 *t1
         +(c013-c103) *t2 *t2 *t2
@@ -59,7 +59,7 @@ vec3 quartic_bezier_triangle_normal(
         +3*(c211-c301) *t2 *t0 *t0
         +6*(c121-c211) *t0 *t1 *t2
     );
-    vec3 dp_dt2 = (
+    vec3 dp_dt2 = normalize(
         +(c301-c400) *t0 *t0 *t0
         +(c031-c130) *t1 *t1 *t1
         +(c004-c103) *t2 *t2 *t2
@@ -71,7 +71,13 @@ vec3 quartic_bezier_triangle_normal(
         +3*(c202-c301) *t2 *t0 *t0
         +6*(c112-c211) *t0 *t1 *t2
     );
-    return -normalize(cross(dp_dt1, dp_dt2));
+    vec3 vn = -cross(dp_dt1, dp_dt2);
+    if (length(vn) < 0.001) {
+        return normalize(
+            cross(c004-c400, c040-c400)
+        );
+    }
+    return normalize(vn);
 }
 
 void calc_curve_control_points(
@@ -142,11 +148,4 @@ void main(void) {
     gl_Position = v_position / v_position.w;
 
     v_normal = mat3(pc.view) * normal;
-    /*normalize(
-        cross(
-            gl_in[2].gl_Position.xyz - gl_in[0].gl_Position.xyz,
-            gl_in[1].gl_Position.xyz - gl_in[0].gl_Position.xyz
-        )
-    );
-    */
 }
