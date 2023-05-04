@@ -1,13 +1,12 @@
 
 タスク
-  z-test
   tesselation
-    tes_eval(pn edges)
-      normal
     tes_ctrl(edge length based)
   データ部分を分離
+  いくつかの形状を試す
+    円筒
+    カプセル
 
-builder.bind_descriptor_sets
 
 built-in variables
   https://www.khronos.org/opengl/wiki/Built-in_Variable_(GLSL)
@@ -54,3 +53,6 @@ cross(b-a, c-a)
   = cross(c-b, a-b)
   = cross(a-c, b-c)
 
+
+幾つかのパターンで接線連続が保たれない?
+  全ての辺が同一平面上にある場合

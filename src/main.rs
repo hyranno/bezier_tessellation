@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use vulkano::{
     buffer::{Buffer, BufferContents, BufferCreateInfo, BufferUsage},
+    format::Format,
     command_buffer::{
         allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
         RenderPassBeginInfo, SubpassContents,
@@ -9,12 +10,13 @@ use vulkano::{
         physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, Features,
         QueueCreateInfo, QueueFlags,
     },
-    image::{view::ImageView, ImageAccess, ImageUsage, SwapchainImage},
+    image::{view::ImageView, AttachmentImage, ImageAccess, ImageUsage, SwapchainImage},
     instance::{Instance, InstanceCreateInfo},
     memory::allocator::{AllocationCreateInfo, MemoryUsage, StandardMemoryAllocator},
     pipeline::{
         graphics::{
             input_assembly::{InputAssemblyState, PrimitiveTopology},
+            depth_stencil::DepthStencilState,
             // rasterization::{PolygonMode, RasterizationState},
             tessellation::TessellationState,
             vertex_input::Vertex,
@@ -370,10 +372,16 @@ fn main() {
                 format: swapchain.image_format(),
                 samples: 1,
             },
+            depth: {
+                load: Clear,
+                store: DontCare,
+                format: Format::D16_UNORM,
+                samples: 1,
+            },
         },
         pass: {
             color: [color],
-            depth_stencil: {},
+            depth_stencil: {depth},
         },
     )
     .unwrap();
@@ -396,6 +404,7 @@ fn main() {
         .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
         .fragment_shader(fs.entry_point("main").unwrap(), ())
         .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+        .depth_stencil_state(DepthStencilState::simple_depth_test())
         .build(device.clone())
         .unwrap();
 
@@ -417,7 +426,7 @@ fn main() {
         dimensions: [0.0, 0.0],
         depth_range: 0.0..1.0,
     };
-    let mut framebuffers = window_size_dependent_setup(&images, render_pass.clone(), &mut viewport);
+    let mut framebuffers = window_size_dependent_setup(&images, render_pass.clone(), &mut viewport, &memory_allocator);
 
     let command_buffer_allocator =
         StandardCommandBufferAllocator::new(device.clone(), Default::default());
@@ -456,7 +465,7 @@ fn main() {
 
                 swapchain = new_swapchain;
                 framebuffers =
-                    window_size_dependent_setup(&new_images, render_pass.clone(), &mut viewport);
+                    window_size_dependent_setup(&new_images, render_pass.clone(), &mut viewport, &memory_allocator);
                 recreate_swapchain = false;
             }
 
@@ -483,7 +492,7 @@ fn main() {
             builder
                 .begin_render_pass(
                     RenderPassBeginInfo {
-                        clear_values: vec![Some([0.0, 0.0, 0.0, 1.0].into())],
+                        clear_values: vec![Some([0.0, 0.0, 0.0, 1.0].into()), Some(1.0.into())],
                         ..RenderPassBeginInfo::framebuffer(
                             framebuffers[image_index as usize].clone(),
                         )
@@ -543,9 +552,20 @@ fn window_size_dependent_setup(
     images: &[Arc<SwapchainImage>],
     render_pass: Arc<RenderPass>,
     viewport: &mut Viewport,
+    memory_allocator: &StandardMemoryAllocator,
 ) -> Vec<Arc<Framebuffer>> {
     let dimensions = images[0].dimensions().width_height();
     viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+    let depth_attachment = ImageView::new_default(
+        AttachmentImage::with_usage(
+            memory_allocator,
+            dimensions,
+            Format::D16_UNORM,
+            ImageUsage::DEPTH_STENCIL_ATTACHMENT | ImageUsage::TRANSIENT_ATTACHMENT,
+        )
+        .unwrap(),
+    )
+    .unwrap();
 
     images
         .iter()
@@ -554,7 +574,7 @@ fn window_size_dependent_setup(
             Framebuffer::new(
                 render_pass.clone(),
                 FramebufferCreateInfo {
-                    attachments: vec![view],
+                    attachments: vec![view, depth_attachment.clone()],
                     ..Default::default()
                 },
             )
