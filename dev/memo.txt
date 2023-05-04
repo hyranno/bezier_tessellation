@@ -1,7 +1,5 @@
 
 タスク
-  tesselation
-    tes_ctrl(edge length based)
   データ部分を分離
   いくつかの形状を試す
     円筒
