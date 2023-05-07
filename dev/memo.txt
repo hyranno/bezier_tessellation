@@ -1,8 +1,5 @@
 
 タスク
-  tessellation
-    normal
-      crossで一番lengthが大きいものを採用する
   いくつかの形状を試す
     円筒
     カプセル

@@ -47,6 +47,18 @@ vec3 quartic_bezier_triangle_normal(
     vec3 c211, vec3 c121, vec3 c112,
     float t0, float t1, float t2
 ) {
+    vec3 dp_dt0 = normalize(
+        +(c400-c301) *t0 *t0 *t0
+        +(c130-c031) *t1 *t1 *t1
+        +(c103-c004) *t2 *t2 *t2
+        +3*(c310-c211) *t0 *t0 *t1
+        +3*(c220-c121) *t0 *t1 *t1
+        +3*(c121-c022) *t1 *t1 *t2
+        +3*(c112-c013) *t1 *t2 *t2
+        +3*(c301-c202) *t2 *t2 *t0
+        +3*(c202-c103) *t2 *t0 *t0
+        +6*(c211-c112) *t0 *t1 *t2
+    );
     vec3 dp_dt1 = normalize(
         +(c310-c400) *t0 *t0 *t0
         +(c040-c130) *t1 *t1 *t1
@@ -71,11 +83,19 @@ vec3 quartic_bezier_triangle_normal(
         +3*(c202-c301) *t2 *t0 *t0
         +6*(c112-c211) *t0 *t1 *t2
     );
-    vec3 vn = -cross(dp_dt1, dp_dt2);
+    vec3 vn01 = -cross(dp_dt0, dp_dt1);
+    vec3 vn12 = -cross(dp_dt1, dp_dt2);
+    vec3 vn20 = -cross(dp_dt2, dp_dt0);
+    vec3 vn = vn01;
+    vn = mix(vn, vn12, bvec3(length(vn) < length(vn12)));
+    vn = mix(vn, vn20, bvec3(length(vn) < length(vn20)));
     if (length(vn) < 0.001) {
-        return normalize(
-            cross(c004-c400, c040-c400)
-        );
+        vec3 vnf01 = -cross(c040-c400, c004-c400);
+        vec3 vnf12 = -cross(c004-c040, c400-c040);
+        vec3 vnf20 = -cross(c400-c004, c040-c004);
+        vn = vnf01;
+        vn = mix(vn, vnf12, bvec3(length(vn) < length(vnf12)));
+        vn = mix(vn, vnf20, bvec3(length(vn) < length(vnf20)));
     }
     return normalize(vn);
 }
