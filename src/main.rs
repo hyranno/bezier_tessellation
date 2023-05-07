@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use vulkano::{
-    buffer::{Buffer, BufferContents, BufferCreateInfo, BufferUsage},
+    buffer::{Buffer, BufferCreateInfo, BufferUsage},
     format::Format,
     command_buffer::{
         allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
@@ -69,7 +69,93 @@ mod fs {
     }
 }
 
+mod mesh;
+use mesh::{
+    Mesh, VertexData, Normal, Edge, Face,
+};
+
 fn main() {
+    let mesh = Mesh {
+        vertices: vec![
+            VertexData {
+                position: [0.0, 0.5, 0.0],
+            },
+            VertexData {
+                position: [0.5*(0.0f32).sin(), 0.0, 0.5*(0.0f32).cos()],
+            },
+            VertexData {
+                position: [0.5*(std::f32::consts::PI*2.0/3.0).sin(), 0.0, 0.5*(std::f32::consts::PI*2.0/3.0).cos()],
+            },
+            VertexData {
+                position: [0.5*(std::f32::consts::PI*4.0/3.0).sin(), 0.0, 0.5*(std::f32::consts::PI*4.0/3.0).cos()],
+            },
+        ],
+
+        normals: vec![
+            Normal {normal: [
+                (0.0f32).sin(),
+                0.0,
+                (0.0f32).cos(),
+                0.0f32
+            ]},
+            Normal {normal: [
+                (std::f32::consts::PI*2.0/3.0).sin(),
+                0.0,
+                (std::f32::consts::PI*2.0/3.0).cos(),
+                0.0f32
+            ]},
+            Normal {normal: [
+                (std::f32::consts::PI*4.0/3.0).sin(),
+                0.0,
+                (std::f32::consts::PI*4.0/3.0).cos(),
+                0.0f32
+            ]},
+            Normal {normal: [
+                (std::f32::consts::PI/2.0).sin() * (0.0f32).sin(),
+                (std::f32::consts::PI/2.0).cos(),
+                (std::f32::consts::PI/2.0).sin() * (0.0f32).cos(),
+                0.0f32
+            ]},
+            Normal {normal: [
+                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).sin(),
+                (std::f32::consts::PI/2.0).cos(),
+                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).cos(),
+                0.0f32
+            ]},
+            Normal {normal: [
+                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).sin(),
+                (std::f32::consts::PI/2.0).cos(),
+                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).cos(),
+                0.0f32
+            ]},
+        ],
+
+        edges: vec![
+            Edge{vertices: [0, 1], normals: [3, 3]},
+            Edge{vertices: [0, 2], normals: [4, 4]},
+            Edge{vertices: [0, 3], normals: [5, 5]},
+            Edge{vertices: [1, 2], normals: [0, 1]},
+            Edge{vertices: [2, 3], normals: [1, 2]},
+            Edge{vertices: [3, 1], normals: [2, 0]},
+        ],
+    
+        faces: vec![
+            Face{edges: [0, 3, 1]},
+            Face{edges: [1, 4, 2]},
+            Face{edges: [2, 5, 0]},
+            Face{edges: [3, 4, 5]},
+        ],
+    
+        /* can be calculated by faces, edges */
+        vertex_indices: vec![
+            0,1,2,
+            0,2,3,
+            0,3,1,
+            1,2,3u32
+        ],
+    
+    };
+
     let library = VulkanLibrary::new().unwrap();
     let required_extensions = vulkano_win::required_extensions(&library);
     let instance = Instance::new(
@@ -87,59 +173,62 @@ fn main() {
         .build_vk_surface(&event_loop, instance.clone())
         .unwrap();
 
-    let device_extensions = DeviceExtensions {
-        khr_swapchain: true,
-        ..DeviceExtensions::empty()
-    };
-    let features = Features {
-        tessellation_shader: true,
-        fill_mode_non_solid: true,
-        ..Features::empty()
-    };
-    let (physical_device, queue_family_index) = instance
-        .enumerate_physical_devices()
-        .unwrap()
-        .filter(|p| p.supported_extensions().contains(&device_extensions))
-        .filter(|p| p.supported_features().contains(&features))
-        .filter_map(|p| {
-            p.queue_family_properties()
-                .iter()
-                .enumerate()
-                .position(|(i, q)| {
-                    q.queue_flags.intersects(QueueFlags::GRAPHICS)
-                        && p.surface_support(i as u32, &surface).unwrap_or(false)
-                })
-                .map(|i| (p, i as u32))
-        })
-        .min_by_key(|(p, _)| match p.properties().device_type {
-            PhysicalDeviceType::DiscreteGpu => 0,
-            PhysicalDeviceType::IntegratedGpu => 1,
-            PhysicalDeviceType::VirtualGpu => 2,
-            PhysicalDeviceType::Cpu => 3,
-            PhysicalDeviceType::Other => 4,
-            _ => 5,
-        })
-        .unwrap();
 
-    println!(
-        "Using device: {} (type: {:?})",
-        physical_device.properties().device_name,
-        physical_device.properties().device_type,
-    );
+    let (device, mut queues) = {
+        let device_extensions = DeviceExtensions {
+            khr_swapchain: true,
+            ..DeviceExtensions::empty()
+        };
+        let features = Features {
+            tessellation_shader: true,
+            fill_mode_non_solid: true,
+            ..Features::empty()
+        };
+        let (physical_device, queue_family_index) = instance
+            .enumerate_physical_devices()
+            .unwrap()
+            .filter(|p| p.supported_extensions().contains(&device_extensions))
+            .filter(|p| p.supported_features().contains(&features))
+            .filter_map(|p| {
+                p.queue_family_properties()
+                    .iter()
+                    .enumerate()
+                    .position(|(i, q)| {
+                        q.queue_flags.intersects(QueueFlags::GRAPHICS)
+                            && p.surface_support(i as u32, &surface).unwrap_or(false)
+                    })
+                    .map(|i| (p, i as u32))
+            })
+            .min_by_key(|(p, _)| match p.properties().device_type {
+                PhysicalDeviceType::DiscreteGpu => 0,
+                PhysicalDeviceType::IntegratedGpu => 1,
+                PhysicalDeviceType::VirtualGpu => 2,
+                PhysicalDeviceType::Cpu => 3,
+                PhysicalDeviceType::Other => 4,
+                _ => 5,
+            })
+            .unwrap();
 
-    let (device, mut queues) = Device::new(
-        physical_device,
-        DeviceCreateInfo {
-            enabled_extensions: device_extensions,
-            enabled_features: features,
-            queue_create_infos: vec![QueueCreateInfo {
-                queue_family_index,
+        println!(
+            "Using device: {} (type: {:?})",
+            physical_device.properties().device_name,
+            physical_device.properties().device_type,
+        );
+
+        Device::new(
+            physical_device,
+            DeviceCreateInfo {
+                enabled_extensions: device_extensions,
+                enabled_features: features,
+                queue_create_infos: vec![QueueCreateInfo {
+                    queue_family_index,
+                    ..Default::default()
+                }],
                 ..Default::default()
-            }],
-            ..Default::default()
-        },
-    )
-    .unwrap();
+            },
+        )
+        .unwrap()
+    };
     let queue = queues.next().unwrap();
 
     let (mut swapchain, images) = {
@@ -190,108 +279,6 @@ fn main() {
         }
     };
 
-    #[derive(BufferContents, Vertex)]
-    #[repr(C)]
-    struct Vertex {
-        #[format(R32G32B32_SFLOAT)]
-        position: [f32; 3],
-    }
-
-    let vertices = [
-        Vertex {
-            position: [0.0, 0.5, 0.0],
-        },
-        Vertex {
-            position: [0.5*(0.0f32).sin(), 0.0, 0.5*(0.0f32).cos()],
-        },
-        Vertex {
-            position: [0.5*(std::f32::consts::PI*2.0/3.0).sin(), 0.0, 0.5*(std::f32::consts::PI*2.0/3.0).cos()],
-        },
-        Vertex {
-            position: [0.5*(std::f32::consts::PI*4.0/3.0).sin(), 0.0, 0.5*(std::f32::consts::PI*4.0/3.0).cos()],
-        },
-    ];
-
-    #[derive(BufferContents)]
-    #[repr(C)]
-    struct Normal {
-        normal: [f32; 4],  /* include padding */
-    }
-    let normals = [
-        Normal {normal: [
-            (0.0f32).sin(),
-            0.0,
-            (0.0f32).cos(),
-            0.0f32
-        ]},
-        Normal {normal: [
-            (std::f32::consts::PI*2.0/3.0).sin(),
-            0.0,
-            (std::f32::consts::PI*2.0/3.0).cos(),
-            0.0f32
-        ]},
-        Normal {normal: [
-            (std::f32::consts::PI*4.0/3.0).sin(),
-            0.0,
-            (std::f32::consts::PI*4.0/3.0).cos(),
-            0.0f32
-        ]},
-        Normal {normal: [
-            (std::f32::consts::PI/2.0).sin() * (0.0f32).sin(),
-            (std::f32::consts::PI/2.0).cos(),
-            (std::f32::consts::PI/2.0).sin() * (0.0f32).cos(),
-            0.0f32
-        ]},
-        Normal {normal: [
-            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).sin(),
-            (std::f32::consts::PI/2.0).cos(),
-            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).cos(),
-            0.0f32
-        ]},
-        Normal {normal: [
-            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).sin(),
-            (std::f32::consts::PI/2.0).cos(),
-            (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).cos(),
-            0.0f32
-        ]},
-    ];
-
-    #[derive(BufferContents)]
-    #[repr(C)]
-    struct Edge {
-        vertices: [u32; 2],
-        normals: [u32; 2],
-    }
-    let edges = [
-        Edge{vertices: [0, 1], normals: [3, 3]},
-        Edge{vertices: [0, 2], normals: [4, 4]},
-        Edge{vertices: [0, 3], normals: [5, 5]},
-        Edge{vertices: [1, 2], normals: [0, 1]},
-        Edge{vertices: [2, 3], normals: [1, 2]},
-        Edge{vertices: [3, 1], normals: [2, 0]},
-    ];
-
-    #[derive(BufferContents)]
-    #[repr(C)]
-    struct Face {
-        edges: [u32; 3],
-    }
-    let faces = [
-        Face{edges: [0, 3, 1]},
-        Face{edges: [1, 4, 2]},
-        Face{edges: [2, 5, 0]},
-        Face{edges: [3, 4, 5]},
-    ];
-
-    /* can be calculated by faces, edges */
-    let vertex_indices = [
-        0,1,2,
-        0,2,3,
-        0,3,1,
-        1,2,3u32
-    ];
-
-
     let vertex_buffer = Buffer::from_iter(
         &memory_allocator,
         BufferCreateInfo {
@@ -302,7 +289,7 @@ fn main() {
             usage: MemoryUsage::Upload,
             ..Default::default()
         },
-        vertices,
+        mesh.vertices,
     ).unwrap();
 
     let index_buffer = Buffer::from_iter(
@@ -315,7 +302,7 @@ fn main() {
             usage: MemoryUsage::Upload,
             ..Default::default()
         },
-        vertex_indices,
+        mesh.vertex_indices,
     ).unwrap();
 
     let ssbo_normals = Buffer::from_iter(
@@ -328,7 +315,7 @@ fn main() {
             usage: MemoryUsage::Upload,
             ..Default::default()
         },
-        normals,
+        mesh.normals,
     ).unwrap();
 
     let ssbo_edges = Buffer::from_iter(
@@ -341,7 +328,7 @@ fn main() {
             usage: MemoryUsage::Upload,
             ..Default::default()
         },
-        edges,
+        mesh.edges,
     ).unwrap();
 
     let ssbo_faces = Buffer::from_iter(
@@ -354,7 +341,7 @@ fn main() {
             usage: MemoryUsage::Upload,
             ..Default::default()
         },
-        faces,
+        mesh.faces,
     ).unwrap();
 
 
@@ -387,7 +374,7 @@ fn main() {
     .unwrap();
 
     let pipeline = GraphicsPipeline::start()
-        .vertex_input_state(Vertex::per_vertex())
+        .vertex_input_state(VertexData::per_vertex())
         .vertex_shader(vs.entry_point("main").unwrap(), ())
         .tessellation_shaders(
             tcs.entry_point("main").unwrap(),
