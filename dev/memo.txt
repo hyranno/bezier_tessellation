@@ -3,6 +3,7 @@
   いくつかの形状を試す
     円筒
     カプセル
+  Readme書く
 
 
 built-in variables
@@ -52,6 +53,7 @@ face_vertices  //index buffer
 DCCツールへの適用
 point-normalな表現ではなくbezier curveをそのまま触れる方が自由度が高いし分かりやすくもあるか?
   法線連続についてはvertex上のnormal(ファイル出力しない)を編集して、接続する制御点を束縛する
+  cubic bezier curveを扱えるならquarticに変換可能
 
 
 
