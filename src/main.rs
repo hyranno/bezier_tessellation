@@ -111,21 +111,21 @@ fn main() {
                 0.0f32
             ]},
             Normal {normal: [
-                (std::f32::consts::PI/2.0).sin() * (0.0f32).sin(),
-                (std::f32::consts::PI/2.0).cos(),
-                (std::f32::consts::PI/2.0).sin() * (0.0f32).cos(),
+                (std::f32::consts::PI/4.0).sin() * (0.0f32).sin(),
+                (std::f32::consts::PI/4.0).cos(),
+                (std::f32::consts::PI/4.0).sin() * (0.0f32).cos(),
                 0.0f32
             ]},
             Normal {normal: [
-                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).sin(),
-                (std::f32::consts::PI/2.0).cos(),
-                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*2.0/3.0).cos(),
+                (std::f32::consts::PI/4.0).sin() * (std::f32::consts::PI*2.0/3.0).sin(),
+                (std::f32::consts::PI/4.0).cos(),
+                (std::f32::consts::PI/4.0).sin() * (std::f32::consts::PI*2.0/3.0).cos(),
                 0.0f32
             ]},
             Normal {normal: [
-                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).sin(),
-                (std::f32::consts::PI/2.0).cos(),
-                (std::f32::consts::PI/2.0).sin() * (std::f32::consts::PI*4.0/3.0).cos(),
+                (std::f32::consts::PI/4.0).sin() * (std::f32::consts::PI*4.0/3.0).sin(),
+                (std::f32::consts::PI/4.0).cos(),
+                (std::f32::consts::PI/4.0).sin() * (std::f32::consts::PI*4.0/3.0).cos(),
                 0.0f32
             ]},
         ],

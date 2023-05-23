@@ -1,0 +1,127 @@
+/* load("draw")$ */
+
+load("vect")$
+declare(".", commutative)$
+dotdistrib : true$
+dotscrules : true$
+
+norm(v) := sqrt(v.v)$
+normalize(v) := v / norm(v)$
+cross(v0, v1) := v0~v1$
+
+quadratic_curve(c20, c11, c02, t0, t1) :=
+    +c20 *t0 *t0
+    +c11 *2 *t0 *t1
+    +c02 *t1 *t1
+$
+cubic_curve(c30, c21, c12, c03, t0, t1) :=
+    +c30 *t0 *t0 *t0
+    +c21 *3 *t0 *t0 *t1
+    +c12 *3 *t0 *t1 *t1
+    +c03 *t1 *t1 *t1
+$
+
+curve_normal(c30, c21, c12, c03, n0, n1, t0, t1) := block(
+    [vv, dp_dt],
+    /*
+    p : cubic_curve(c30, c21, c12, c03, t0, t1),
+    pp : cubic_curve(c30+n0, c21+1/3*(2*n0+n1), c12+1/3*(n0+2*n1), c03+n1, t0, t1),
+    vv : pp-p,
+    */
+    vv : +n0*t0 +n1*t1,
+    dp_dt : quadratic_curve(c21-c30, c12-c21, c03-c12, t0, t1),
+    dpn : normalize(dp_dt),
+    normalize(vv -dpn*(vv.dpn))
+)$
+
+cubic_bezier_triangle(
+    c300, c210, c120, c030, c021, c012, c003, c102, c201, c111,
+    t0, t1, t2
+) := (
+    +c300 *t0 *t0 *t0
+    +c210 *t0 *t0 *t1 *3
+    +c120 *t0 *t1 *t1 *3
+    +c030 *t1 *t1 *t1
+    +c021 *t1 *t1 *t2 *3
+    +c012 *t1 *t2 *t2 *3
+    +c003 *t2 *t2 *t2
+    +c102 *t2 *t2 *t0 *3
+    +c201 *t2 *t0 *t0 *3
+    +c111 *t0 *t1 *t2 *6
+)$
+
+pn_triangle(
+    p0, p1, p2, n0, n1, n2,
+    t0, t1, t2
+) := block(
+    [c300, c210, c120, c030, c021, c012, c003, c102, c201, c111, ve, vv],
+    c300 : p0,
+    c210 : p0 +1/3*((p1-p0) -n0*n0.(p1-p0)),
+    c120 : p1 +1/3*((p0-p1) -n1*n1.(p0-p1)),
+    c030 : p1,
+    c021 : p1 +1/3*((p2-p1) -n1*n1.(p2-p1)),
+    c012 : p2 +1/3*((p1-p2) -n2*n2.(p1-p2)),
+    c003 : p2,
+    c102 : p2 +1/3*((p0-p2) -n2*n2.(p0-p2)),
+    c201 : p0 +1/3*((p2-p0) -n0*n0.(p2-p0)),
+    ve : 1/6 *(+c210 +c120 +c021 +c012 +c102 +c201),
+    vv : 1/3 *(+c300 +c030 +c003),
+    c111 : ve +1/2*(ve-vv),
+    cubic_bezier_triangle(
+        c300, c210, c120, c030, c021, c012, c003, c102, c201, c111,
+        t0, t1, t2
+    )
+)$
+
+curves_based_triangle(
+    c300, c210, c120, c030, c021, c012, c003, c102, c201,
+    t0, t1, t2
+) := block(
+    [n0, n1, n2, p01, p12, p20, n01, n12, n20],
+    n0 : normalize(cross(c300-c201, c210-c300)),
+    n1 : normalize(cross(c030-c120, c021-c030)),
+    n2 : normalize(cross(c003-c012, c102-c003)),
+    p01 : cubic_curve(c300, c210, c120, c030, t0/(t0+t1), t1/(t0+t1)),
+    p12 : cubic_curve(c030, c021, c012, c003, t1/(t1+t2), t2/(t1+t2)),
+    p20 : cubic_curve(c003, c102, c201, c300, t2/(t2+t0), t0/(t2+t0)),
+    n01 : curve_normal(c300, c210, c120, c030, n0, n1, t0/(t0+t1), t1/(t0+t1)),
+    n12 : curve_normal(c030, c021, c012, c003, n1, n2, t1/(t1+t2), t2/(t1+t2)),
+    n20 : curve_normal(c003, c102, c201, c300, n2, n0, t2/(t2+t0), t0/(t2+t0)),
+    /*
+    solve(
+        [
+            t12 = (1-t0)*t1*t2 *s,
+            t20 = (1-t1)*t2*t0 *s,
+            t01 = (1-t2)*t0*t1 *s,
+            t12 + t20 + t01 = 1
+        ],
+        [t12, t20, t01, s]
+    );
+    */
+    s : 1.0 / (+(t0*t1 +t1*t2 +t2*t0) -3*t0*t1*t2),
+    t01 : (1-t2)*t0*t1 *s,
+    t12 : (1-t0)*t1*t2 *s,
+    t20 : (1-t1)*t2*t0 *s,
+    pn_triangle(
+        p01, p12, p20, n01, n12, n20,
+        t01, t12, t20
+    )
+)$
+
+
+preview_triangle : curves_based_triangle(
+    [-1,0,0], [-0.5, -0.2, 0.2], [+0.5, -0.2, 0.2],
+    [+1,0,0], [+0.7, 0.3, 0.2], [+0.3, 0.7, 0.2],
+    [0,+1,0], [-0.3, 0.7, 0.2], [-0.7, 0.3, 0.2],
+    t0, t1, 1-(t0+t1)
+)$
+
+/*
+draw3d(
+    explicit(
+        preview_triangle,
+        t0, 0, 1,
+        t1, 0, 1
+    )
+);
+*/

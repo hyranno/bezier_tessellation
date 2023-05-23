@@ -38,7 +38,6 @@ face_vertices  //index buffer
 上を満たす辺を共有する曲面の法線が、その辺の上で一致する
   ただし各曲面の制御点は独立に定めたい
   <- 辺の上の法線が、その辺と端点の情報のみで定められる
-    <- 制御点c211, c121, c112 を端点と一致させる
 
 面の法線が不連続でも辺を共有することがある
   法線が不連続な場合でも同じデータ形式やアルゴリズムで処理したい
@@ -52,17 +51,16 @@ face_vertices  //index buffer
 DCCツールへの適用
 point-normalな表現ではなくbezier curveをそのまま触れる方が自由度が高いし分かりやすくもあるか?
   法線連続についてはvertex上のnormal(ファイル出力しない)を編集して、接続する制御点を束縛する
-  cubic bezier curveを扱えるならquarticに変換可能
+  curveはbezierじゃなくてもよさそう
 
 
 
-t2=0 のとき法線がv2, n12_2, n20_2に依存しない
-t0=1-t2-t1 として
-n = normalize(cross(dp_dt2, dp_dt1))
+辺12の上のn12を適当に定める
+(p01, n01) : cubic_curve(c300, c210, c120, c030, t0/(t0+t1), t1/(t0+t1))$
+(p12, n12) : cubic_curve(c030, c021, c012, c003, t1/(t1+t2), t2/(t1+t2))$
+(p20, n20) : cubic_curve(c003, c102, c201, c300, t2/(t2+t0), t0/(t2+t0))$
+p : pn_triangle(p01, p12, p20, n01, n12, n20, t01, t12, t01)$
 
-Cubic Bezier Triangle では無理
-  4次(quartic)
-  6次(hexic)になると制御点の描く3角形が3重になる
 
 
 分配則
@@ -74,7 +72,20 @@ cross(b-a, c-a)
   = +cross(b,c) +cross(c,a) +cross(a,b)
   = cross(c-b, a-b)
   = cross(a-c, b-c)
+dot(a, cross(b, c)) = dot(c, cross(a, b)) = dot(b, cross(c, a))
 
 
-幾つかのパターンで接線連続が保たれない?
-  全ての辺が同一平面上にある場合(法線も同一平面上?)
+正弦定理
+2*R
+  = 1/sin(a0) *length(v2-v0) *length(v1-v0)
+  = 1/sin(a1) *length(v0-v1) *length(v2-v1)
+  = 1/sin(a2) *length(v1-v2) *length(v0-v2)
+
+余弦定理
+length(v2-v1) = +length(v2-v0)^2 +length(v1-v0)^2 -2*length(v2-v0)*length(v1-v0)*cos(a0)
+
+回転
+ベクトルrを軸nまわりにaだけ回転
+  r*cos(a) +n*(n.r)*(1-cos(a)) +cross(n, r)*sin(a)
+
+
