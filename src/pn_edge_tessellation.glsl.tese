@@ -74,23 +74,10 @@ vec3 cubic_bezier_triangle(
     );
 }
 
-vec3 cubic_bezier_triangle_normal(
-    vec3 c300, vec3 c210, vec3 c120,
-    vec3 c030, vec3 c021, vec3 c012,
-    vec3 c003, vec3 c102, vec3 c201,
-    vec3 c111,
-    float t0, float t1, float t2
-) {
-    /* TODO: */
-    return vec3(0);
-}
-
-
-void pn_triangle(
+vec3 pn_triangle(
     vec3 p0, vec3 p1, vec3 p2,
     vec3 n0, vec3 n1, vec3 n2,
-    float t0, float t1, float t2,
-    out vec3 point, out vec3 normal
+    float t0, float t1, float t2
 ) {
     vec3 c300 = p0;
     vec3 c210 = p0 +((p1-p0) -n0*dot(n0, p1-p0)) /3;
@@ -104,14 +91,24 @@ void pn_triangle(
     vec3 ve = (+c210 +c120 +c021 +c012 +c102 +c201) /6;
     vec3 vv = (+c300 +c030 +c003) /3;
     vec3 c111 = ve +(ve-vv)/2;
-    point = cubic_bezier_triangle(
+    return cubic_bezier_triangle(
         c300, c210, c120, c030, c021, c012, c003, c102, c201, c111,
         t0, t1, t2
     );
-    normal = cubic_bezier_triangle_normal(
-        c300, c210, c120, c030, c021, c012, c003, c102, c201, c111,
+}
+
+vec3 approx_normal(
+    vec3 n0, vec3 n1, vec3 n2,
+    float t0, float t1, float t2
+) {
+    vec3 n = cubic_bezier_triangle(
+        n0, (2*n0+n1)/3, (n0+2*n1)/3,
+        n1, (2*n1+n2)/3, (n1+2*n2)/3,
+        n2, (2*n2+n0)/3, (n2+2*n0)/3,
+        (n0+n1+n2)/3,
         t0, t1, t2
     );
+    return normalize_or_zero(n);
 }
 
 void curves_defined_triangle(
@@ -149,77 +146,17 @@ void curves_defined_triangle(
     float t01 = (1-t2)*t0*t1 *s;
     float t12 = (1-t0)*t1*t2 *s;
     float t20 = (1-t1)*t2*t0 *s;
-    pn_triangle(
+    point = pn_triangle(
         p01, p12, p20, n01, n12, n20,
-        t01, t12, t20,
-        point, normal
+        t01, t12, t20
     );
-}
-
-
-
-
-vec3 quartic_bezier_triangle_normal(
-    vec3 c400, vec3 c040, vec3 c004,
-    vec3 c310, vec3 c220, vec3 c130,
-    vec3 c031, vec3 c022, vec3 c013,
-    vec3 c103, vec3 c202, vec3 c301,
-    vec3 c211, vec3 c121, vec3 c112,
-    float t0, float t1, float t2
-) {
-    vec3 dp_dt0 = normalize(
-        +(c400-c301) *t0 *t0 *t0
-        +(c130-c031) *t1 *t1 *t1
-        +(c103-c004) *t2 *t2 *t2
-        +3*(c310-c211) *t0 *t0 *t1
-        +3*(c220-c121) *t0 *t1 *t1
-        +3*(c121-c022) *t1 *t1 *t2
-        +3*(c112-c013) *t1 *t2 *t2
-        +3*(c301-c202) *t2 *t2 *t0
-        +3*(c202-c103) *t2 *t0 *t0
-        +6*(c211-c112) *t0 *t1 *t2
-    );
-    vec3 dp_dt1 = normalize(
-        +(c310-c400) *t0 *t0 *t0
-        +(c040-c130) *t1 *t1 *t1
-        +(c013-c103) *t2 *t2 *t2
-        +3*(c220-c310) *t0 *t0 *t1
-        +3*(c130-c220) *t0 *t1 *t1
-        +3*(c031-c121) *t1 *t1 *t2
-        +3*(c022-c112) *t1 *t2 *t2
-        +3*(c112-c202) *t2 *t2 *t0
-        +3*(c211-c301) *t2 *t0 *t0
-        +6*(c121-c211) *t0 *t1 *t2
-    );
-    vec3 dp_dt2 = normalize(
-        +(c301-c400) *t0 *t0 *t0
-        +(c031-c130) *t1 *t1 *t1
-        +(c004-c103) *t2 *t2 *t2
-        +3*(c211-c310) *t0 *t0 *t1
-        +3*(c121-c220) *t0 *t1 *t1
-        +3*(c022-c121) *t1 *t1 *t2
-        +3*(c013-c112) *t1 *t2 *t2
-        +3*(c103-c202) *t2 *t2 *t0
-        +3*(c202-c301) *t2 *t0 *t0
-        +6*(c112-c211) *t0 *t1 *t2
-    );
-    vec3 vn01 = -cross(dp_dt0, dp_dt1);
-    vec3 vn12 = -cross(dp_dt1, dp_dt2);
-    vec3 vn20 = -cross(dp_dt2, dp_dt0);
-    vec3 vn = vn01;
-    vn = mix(vn, vn12, bvec3(length(vn) < length(vn12)));
-    vn = mix(vn, vn20, bvec3(length(vn) < length(vn20)));
-    if (length(vn) < 0.001) {
-        vec3 vnf01 = -cross(c040-c400, c004-c400);
-        vec3 vnf12 = -cross(c004-c040, c400-c040);
-        vec3 vnf20 = -cross(c400-c004, c040-c004);
-        vn = vnf01;
-        vn = mix(vn, vnf12, bvec3(length(vn) < length(vnf12)));
-        vn = mix(vn, vnf20, bvec3(length(vn) < length(vnf20)));
+    // vec3 normal_optional = approx_normal(n0, n1, n2, t0, t1, t2);
+    vec3 normal_optional = approx_normal(n01, n12, n20, t01, t12, t20);
+    normal = normal_optional;
+    if (length(normal_optional) <= 0) {
+        normal = normalize(cross(c300-c003, c030-c300));
     }
-    return normalize(vn);
 }
-
 
 
 void main(void) {

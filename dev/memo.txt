@@ -1,7 +1,7 @@
 
 タスク
-  式の修正
-    形状も法線も尖ってしまってそう
+  coneのcylinder変形バージョン
+  cone, cylinderの底面で見られる異常normalの修正
   Readme書く
 
 
