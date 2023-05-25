@@ -11,9 +11,10 @@ layout(push_constant) uniform PushConstantData {
 } pc;
 
 
+const float almost_zero = 1e-8;
 
 vec3 normalize_or_zero(vec3 v) {
-    if (length(v) <= 0) {
+    if (length(v) <= almost_zero) {
         return vec3(0);
     }
     return normalize(v);
@@ -121,17 +122,17 @@ void curves_defined_triangle(
     vec3 n0 = normalize_or_zero(cross(c300-c201, c210-c300));
     vec3 n1 = normalize_or_zero(cross(c030-c120, c021-c030));
     vec3 n2 = normalize_or_zero(cross(c003-c012, c102-c003));
-    if (t0+t1 <= 0) {
+    if (t0+t1 <= almost_zero) {
         point = c003;
         normal = n2;
         return;
     }
-    if (t1+t2 <= 0) {
+    if (t1+t2 <= almost_zero) {
         point = c300;
         normal = n0;
         return;
     }
-    if (t2+t0 <= 0) {
+    if (t2+t0 <= almost_zero) {
         point = c030;
         normal = n1;
         return;
@@ -153,7 +154,7 @@ void curves_defined_triangle(
     // vec3 normal_optional = approx_normal(n0, n1, n2, t0, t1, t2);
     vec3 normal_optional = approx_normal(n01, n12, n20, t01, t12, t20);
     normal = normal_optional;
-    if (length(normal_optional) <= 0) {
+    if (length(normal_optional) <= almost_zero) {
         normal = normalize(cross(c300-c003, c030-c300));
     }
 }

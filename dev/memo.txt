@@ -3,7 +3,6 @@
   Readme書く
   edgeをpoint-normalな表現からCubicBezierに変更する
   coneのcylinder変形バージョン
-  cone, cylinderの底面で見られる異常normalの修正
 
 
 built-in variables
