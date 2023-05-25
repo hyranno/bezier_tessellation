@@ -12,14 +12,10 @@ pub struct VertexData {
 }
 #[derive(BufferContents)]
 #[repr(C)]
-pub struct Normal {
-    pub normal: [f32; 4],  /* include padding */
-}
-#[derive(BufferContents)]
-#[repr(C)]
 pub struct Edge {
     pub vertices: [u32; 2],
-    pub normals: [u32; 2],
+    pub padding: [u32; 2],
+    pub control_points: [[f32; 4]; 2],
 }
 #[derive(BufferContents)]
 #[repr(C)]
@@ -29,7 +25,6 @@ pub struct Face {
 
 pub struct Mesh {
     pub vertices: Vec<VertexData>,
-    pub normals: Vec<Normal>,
     pub edges: Vec<Edge>,
     pub faces: Vec<Face>,
     pub vertex_indices: Vec<u32>,

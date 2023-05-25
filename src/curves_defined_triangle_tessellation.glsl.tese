@@ -2,7 +2,7 @@
 
 layout(triangles, equal_spacing, cw) in;
 
-layout(location = 0) patch in vec3 edge_normals[3][2];
+layout(location = 0) patch in vec4 edge_control_points[3][2];
 
 layout(location = 0) out vec3 v_normal;
 
@@ -173,20 +173,10 @@ void main(void) {
     vec3 position;
     vec3 normal;
 
-    vec3 c300 = v0;
-    vec3 c210 = v0 +((v1-v0) -edge_normals[0][0]*dot(edge_normals[0][0], v1-v0)) /3;
-    vec3 c120 = v1 +((v0-v1) -edge_normals[0][1]*dot(edge_normals[0][1], v0-v1)) /3;
-    vec3 c030 = v1;
-    vec3 c021 = v1 +((v2-v1) -edge_normals[1][0]*dot(edge_normals[1][0], v2-v1)) /3;
-    vec3 c012 = v2 +((v1-v2) -edge_normals[1][1]*dot(edge_normals[1][1], v1-v2)) /3;
-    vec3 c003 = v2;
-    vec3 c102 = v2 +((v0-v2) -edge_normals[2][0]*dot(edge_normals[2][0], v0-v2)) /3;
-    vec3 c201 = v0 +((v2-v0) -edge_normals[2][1]*dot(edge_normals[2][1], v2-v0)) /3;
-
     curves_defined_triangle(
-        c300, c210, c120,
-        c030, c021, c012,
-        c003, c102, c201,
+        v0, edge_control_points[0][0].xyz, edge_control_points[0][1].xyz,
+        v1, edge_control_points[1][0].xyz, edge_control_points[1][1].xyz,
+        v2, edge_control_points[2][0].xyz, edge_control_points[2][1].xyz,
         r0/rsum, r1/rsum, r2/rsum,
         position, normal
     );
