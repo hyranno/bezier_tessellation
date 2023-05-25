@@ -58,7 +58,7 @@ mod tcs {
 mod tes {
     vulkano_shaders::shader! {
         ty: "tess_eval",
-        path: "src/pn_edge_tessellation.glsl.tese",
+        path: "src/curves_defined_triangle_tessellation.glsl.tese",
     }
 }
 
@@ -71,58 +71,77 @@ mod fs {
 
 mod mesh;
 use mesh::{
-    Mesh, VertexData, Normal, Edge, Face,
+    Mesh, VertexData, Edge, Face,
 };
 
 fn main() {
+    let pi = std::f32::consts::PI;
+
     let mesh = Mesh {
         vertices: vec![
             VertexData {
                 position: [0.0, 0.5, 0.0],
             },
             VertexData {
-                position: [0.5*(0.0f32).sin(), 0.0, 0.5*(0.0f32).cos()],
+                position: [0.5*(pi*0.0/3.0).sin(), 0.0, 0.5*(pi*0.0/3.0).cos()],
             },
             VertexData {
-                position: [0.5*(std::f32::consts::PI*2.0/3.0).sin(), 0.0, 0.5*(std::f32::consts::PI*2.0/3.0).cos()],
+                position: [0.5*(pi*2.0/3.0).sin(), 0.0, 0.5*(pi*2.0/3.0).cos()],
             },
             VertexData {
-                position: [0.5*(std::f32::consts::PI*4.0/3.0).sin(), 0.0, 0.5*(std::f32::consts::PI*4.0/3.0).cos()],
+                position: [0.5*(pi*4.0/3.0).sin(), 0.0, 0.5*(pi*4.0/3.0).cos()],
             },
-        ],
-
-        normals: vec![
-            Normal {normal: [
-                0.0, 1.0, 0.0,
-                0.0f32
-            ]},
-            Normal {normal: [
-                (0.0f32).sin(),
-                0.0,
-                (0.0f32).cos(),
-                0.0f32
-            ]},
-            Normal {normal: [
-                (std::f32::consts::PI*2.0/3.0).sin(),
-                0.0,
-                (std::f32::consts::PI*2.0/3.0).cos(),
-                0.0f32
-            ]},
-            Normal {normal: [
-                (std::f32::consts::PI*4.0/3.0).sin(),
-                0.0,
-                (std::f32::consts::PI*4.0/3.0).cos(),
-                0.0f32
-            ]},
         ],
 
         edges: vec![
-            Edge{vertices: [0, 1], normals: [0, 1]},
-            Edge{vertices: [0, 2], normals: [0, 2]},
-            Edge{vertices: [0, 3], normals: [0, 3]},
-            Edge{vertices: [1, 2], normals: [1, 2]},
-            Edge{vertices: [2, 3], normals: [2, 3]},
-            Edge{vertices: [3, 1], normals: [3, 1]},
+            Edge{
+                padding: [0,0],
+                vertices: [0, 1],
+                control_points: [
+                    [0.2*(pi*0.0/3.0).sin(), 0.5, 0.2*(pi*0.0/3.0).cos(), 1.0],
+                    [0.5*(pi*0.0/3.0).sin(), 0.2, 0.5*(pi*0.0/3.0).cos(), 1.0],
+                ],
+            },
+            Edge{
+                padding: [0,0],
+                vertices: [0, 2],
+                control_points: [
+                    [0.2*(pi*2.0/3.0).sin(), 0.5, 0.2*(pi*2.0/3.0).cos(), 1.0],
+                    [0.5*(pi*2.0/3.0).sin(), 0.2, 0.5*(pi*2.0/3.0).cos(), 1.0],
+                ],
+            },
+            Edge{
+                padding: [0,0],
+                vertices: [0, 3],
+                control_points: [
+                    [0.2*(pi*4.0/3.0).sin(), 0.5, 0.2*(pi*4.0/3.0).cos(), 1.0],
+                    [0.5*(pi*4.0/3.0).sin(), 0.2, 0.5*(pi*4.0/3.0).cos(), 1.0],
+                ],
+            },
+            Edge{
+                padding: [0,0],
+                vertices: [1, 2],
+                control_points: [
+                    [0.5*(pi*0.0/3.0).sin() +0.2*(pi*0.0/3.0).cos(), 0.0, 0.5*(pi*0.0/3.0).cos() -0.2*(pi*0.0/3.0).sin(), 1.0],
+                    [0.5*(pi*2.0/3.0).sin() -0.2*(pi*2.0/3.0).cos(), 0.0, 0.5*(pi*2.0/3.0).cos() +0.2*(pi*2.0/3.0).sin(), 1.0],
+                ],
+            },
+            Edge{
+                padding: [0,0],
+                vertices: [2, 3],
+                control_points: [
+                    [0.5*(pi*2.0/3.0).sin() +0.2*(pi*2.0/3.0).cos(), 0.0, 0.5*(pi*2.0/3.0).cos() -0.2*(pi*2.0/3.0).sin(), 1.0],
+                    [0.5*(pi*4.0/3.0).sin() -0.2*(pi*4.0/3.0).cos(), 0.0, 0.5*(pi*4.0/3.0).cos() +0.2*(pi*4.0/3.0).sin(), 1.0],
+                ]
+            },
+            Edge{
+                padding: [0,0],
+                vertices: [3, 1],
+                control_points: [
+                    [0.5*(pi*4.0/3.0).sin() +0.2*(pi*4.0/3.0).cos(), 0.0, 0.5*(pi*4.0/3.0).cos() -0.2*(pi*4.0/3.0).sin(), 1.0],
+                    [0.5*(pi*0.0/3.0).sin() -0.2*(pi*0.0/3.0).cos(), 0.0, 0.5*(pi*0.0/3.0).cos() +0.2*(pi*0.0/3.0).sin(), 1.0],
+                ],
+            },
         ],
     
         faces: vec![
@@ -291,19 +310,6 @@ fn main() {
         mesh.vertex_indices,
     ).unwrap();
 
-    let ssbo_normals = Buffer::from_iter(
-        &memory_allocator,
-        BufferCreateInfo {
-            usage: BufferUsage::STORAGE_BUFFER,
-            ..Default::default()
-        },
-        AllocationCreateInfo {
-            usage: MemoryUsage::Upload,
-            ..Default::default()
-        },
-        mesh.normals,
-    ).unwrap();
-
     let ssbo_edges = Buffer::from_iter(
         &memory_allocator,
         BufferCreateInfo {
@@ -386,9 +392,8 @@ fn main() {
         &descriptor_allocator,
         layout[0].clone(),
         [
-            WriteDescriptorSet::buffer(0, ssbo_normals.clone()),
-            WriteDescriptorSet::buffer(1, ssbo_edges.clone()),
-            WriteDescriptorSet::buffer(2, ssbo_faces.clone()),
+            WriteDescriptorSet::buffer(0, ssbo_edges.clone()),
+            WriteDescriptorSet::buffer(1, ssbo_faces.clone()),
         ],
     ).unwrap();
 
