@@ -1,9 +1,6 @@
 
 タスク
   Readme書く
-  sample-dataモジュール
-    コマンドライン引数で分岐
-    exampleを削除
   coneのcylinder変形バージョン
 
 
