@@ -143,10 +143,10 @@ void curves_defined_triangle(
     vec3 n01 = curve_normal(c300, c210, c120, c030, n0, n1, t0/(t0+t1), t1/(t0+t1));
     vec3 n12 = curve_normal(c030, c021, c012, c003, n1, n2, t1/(t1+t2), t2/(t1+t2));
     vec3 n20 = curve_normal(c003, c102, c201, c300, n2, n0, t2/(t2+t0), t0/(t2+t0));
-    float s = 1.0 / (+(t0*t1 +t1*t2 +t2*t0) -3*t0*t1*t2);
-    float t01 = (1-t2)*t0*t1 *s;
-    float t12 = (1-t0)*t1*t2 *s;
-    float t20 = (1-t1)*t2*t0 *s;
+    float tsum = +(t0*t1 +t1*t2 +t2*t0) -3*t0*t1*t2;
+    float t01 = (1-t2)*t0*t1 / tsum;
+    float t12 = (1-t0)*t1*t2 / tsum;
+    float t20 = (1-t1)*t2*t0 / tsum;
     point = pn_triangle(
         p01, p12, p20, n01, n12, n20,
         t01, t12, t20
@@ -155,7 +155,7 @@ void curves_defined_triangle(
     vec3 normal_optional = approx_normal(n01, n12, n20, t01, t12, t20);
     normal = normal_optional;
     if (length(normal_optional) <= almost_zero) {
-        normal = normalize(cross(c300-c003, c030-c300));
+        normal = normalize_or_zero(cross(c300-c003, c030-c300));
     }
 }
 

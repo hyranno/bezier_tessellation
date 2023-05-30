@@ -1,7 +1,12 @@
 
 タスク
   Readme書く
-  coneのcylinder変形バージョン
+
+デバッグ
+  printf
+    VulkanConfigurator を起動して ValidationSettings を DebugPrintfPreset に
+    #extension GL_EXT_debug_printf : enable
+    debugPrintfEXT("%v3f", v);
 
 
 built-in variables
@@ -28,6 +33,11 @@ faces
 
 /* can be calculated by the faces, edges */
 face_vertices  //index buffer
+
+
+
+形状の法線が連続しないCubicBezierTriangle版
+  C111だけPN-Triangle同様に計算してCubicBezierTriangle
 
 
 
