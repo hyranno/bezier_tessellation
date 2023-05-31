@@ -38,7 +38,7 @@ face_vertices  //index buffer
 
 形状の法線が連続しないCubicBezierTriangle版
   C111だけPN-Triangle同様に計算してCubicBezierTriangle
-
+  あるいはfaceにc111を持たせる
 
 
 ある点で定められた法線と、その点を端点とする辺が直交する
@@ -55,6 +55,24 @@ face_vertices  //index buffer
 異なるpatch間で共有される辺は同じようにtessellateしないと亀裂が生じる
   <- gl_TessLevelOuterは辺の情報で決定する
 
+
+
+ファイル形式
+glTF風に記述するなら
+primitives
+  indices
+    FaceGroup へのアクセサ
+faces
+  Attributes
+    EDGES
+    CONTROL_POINT
+edges
+  Attributes
+    VERTICES
+    CONTROL_POINTS
+vertices
+  Attributes
+    POSITION, NORMAL, ...
 
 
 DCCツールへの適用
